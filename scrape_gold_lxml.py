@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 import urllib2
-import urlparse
-import builtwith
+import threading
+import  datetime
+import multiprocessing
 import re
 import csv
-import json
-import demjson
 from bs4 import BeautifulSoup
 import lxml.html
 from lxml import etree
@@ -60,11 +59,6 @@ def download_daily_deal(daily_deal,file_name):  #下载每个表格中的数据�
             gold_data.append(contents[(i) * len(td_num) + j])
         gold_data.append(str(daily_time[0]))
         csv_writer.writerow(gold_data)
-
-
-
-
-
     fp.close()
 
 
@@ -72,15 +66,25 @@ def download_daily_deal(daily_deal,file_name):  #下载每个表格中的数据�
 
 
 if __name__ == '__main__':
-    for i in xrange(170,171):
+    pool = multiprocessing.Pool(processes=4)   #使用多进程进行网页的爬取
+    error_txt =open("/home/yutuo/data/gold/error",'a')
+    for i in xrange(1,237):
         daily_page ='http://www.sge.com.cn/sjzx/mrhqsj?p='+str(i)
-        daily_page_html = download(daily_page)
-        soup = BeautifulSoup(daily_page_html, 'html.parser')
-        div = soup.find('div', attrs={'class': 'articleList border_ea mt30 mb30'})
-        ul = div.find('ul')
-        li = ul.find_all('li')
-        for j in xrange(0,1):
-            attrs = li[j].a.attrs
-            daily_deal = "http://www.sge.com.cn" + attrs['href']
-            file_name ="/home/yutuo/data/gold/"+str((i-1)*10+j)
-            download_daily_deal(daily_deal,file_name)
+        try:
+            daily_page_html = download(daily_page)
+            soup = BeautifulSoup(daily_page_html, 'html.parser')
+            div = soup.find('div', attrs={'class': 'articleList border_ea mt30 mb30'})
+            ul = div.find('ul')
+            li = ul.find_all('li')  # 提取出所需表格具体所在的网页
+            for j in xrange(0, 10):
+                attrs = li[j].a.attrs
+                daily_deal = "http://www.sge.com.cn" + attrs['href']
+                file_name = "/home/yutuo/data/gold/" + str((i - 1) * 10 + j)
+                pool.apply_async(download_daily_deal, (daily_deal, file_name))
+        except Exception as e:
+            error_txt.write("**********"+"\n")
+            error_txt.write(daily_page)
+            error_txt.write(str(e))
+
+    pool.close()
+    pool.join()
