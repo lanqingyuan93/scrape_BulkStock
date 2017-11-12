@@ -59,32 +59,34 @@ def download_produce_deal(daily_deal,file_name):  #下载每个表格中的数�
 
 if __name__ == '__main__':
     pool = multiprocessing.Pool(processes=4)   #使用多进程进行网页的爬取
-    file_name ="/home/yutuo/data/produce/soya"
-    for year in xrange(2017,2018): #爬取的
-        for mounth in xrange(4,5):
+    par_craft_index = 13079
+    craft_index = 13233
+    for year in xrange(2014,2018): #爬取的年份
+        for mounth in xrange(1,4): #爬取的季度
             if mounth ==1:
-                produce_deal ='http://nc.mofcom.gov.cn/channel/gxdj/jghq/jg_list.shtml?par_craft_index=13073&craft_index=13087&startTime='+str(year)+'-01-01&endTime='+str(year)+'-03-31&par_p_index=&p_index=&keyword='
+                produce_deal ='http://nc.mofcom.gov.cn/channel/gxdj/jghq/jg_list.shtml?par_craft_index='+str(par_craft_index)+'&craft_index='+str(craft_index)+'&startTime='+str(year)+'-01-01&endTime='+str(year)+'-03-31&par_p_index=&p_index=&keyword='
             elif mounth == 2:
-                produce_deal = 'http://nc.mofcom.gov.cn/channel/gxdj/jghq/jg_list.shtml?par_craft_index=13073&craft_index=13087&startTime=' + str(
+                produce_deal = 'http://nc.mofcom.gov.cn/channel/gxdj/jghq/jg_list.shtml?par_craft_index='+str(par_craft_index)+'&craft_index='+str(craft_index)+'&startTime=' + str(
                     year) + '-04-01&endTime=' + str(year) + '-06-30&par_p_index=&p_index=&keyword='
             elif mounth == 3:
-                produce_deal = 'http://nc.mofcom.gov.cn/channel/gxdj/jghq/jg_list.shtml?par_craft_index=13073&craft_index=13087&startTime=' + str(
+                produce_deal = 'http://nc.mofcom.gov.cn/channel/gxdj/jghq/jg_list.shtml?par_craft_index='+str(par_craft_index)+'&craft_index='+str(craft_index)+'&startTime=' + str(
                     year) + '-07-01&endTime=' + str(year) + '-09-30&par_p_index=&p_index=&keyword='
             else:
-                produce_deal = 'http://nc.mofcom.gov.cn/channel/gxdj/jghq/jg_list.shtml?par_craft_index=13073&craft_index=13087&startTime=' + str(
+                produce_deal = 'http://nc.mofcom.gov.cn/channel/gxdj/jghq/jg_list.shtml?par_craft_index='+str(par_craft_index)+'&craft_index='+str(craft_index)+'&startTime=' + str(
                     year) + '-10-01&endTime=' + str(year) + '-12-31&par_p_index=&p_index=&keyword='
-    produce_deal_html = download(produce_deal)
-    tree = lxml.html.fromstring(produce_deal_html)
-    page = tree.cssselect('.pmCon > script:nth-child(2)')[0]
-    pattern = re.compile('\d+')
-    produce_page = pattern.findall(page.text_content())
-    page_sum = int(produce_page[0]) + 1
-    for page_num in xrange(1,page_sum):
-        produce_deal_page = produce_deal+'&page='+str(page_num)
-        try:
-            pool.apply_async(download_produce_deal, (produce_deal, file_name))
-        except Exception as e:
-            pass
+            produce_deal_html = download(produce_deal)
+            tree = lxml.html.fromstring(produce_deal_html)
+            page = tree.cssselect('.pmCon > script:nth-child(2)')[0]
+            pattern = re.compile('\d+')
+            produce_page = pattern.findall(page.text_content())
+            page_sum = int(produce_page[0]) + 1
+            for page_num in xrange(1, page_sum):#爬取数据所在的页
+                file_name = "/home/yutuo/data/produce/zhurou/" + str(year)+'-'+str(mounth)+'-'+str(page_num)
+                produce_deal_page = produce_deal + '&page=' + str(page_num)
+                try:
+                    pool.apply_async(download_produce_deal, (produce_deal_page, file_name))
+                except Exception as e:
+                    print e
 
 
     pool.close()
